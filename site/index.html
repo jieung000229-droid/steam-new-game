@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스팀 게임 달력 — 출시일 · 할인</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#151b25; --panel2:#1b2330; --line:#263042; --text:#e6ebf2; --sub:#8b97a8;
+  --accent:#4fc3f7; --sale:#a4d007; --saleBg:#2f3d14; --warn:#ffb74d; --new:#ff7eb6; --today:#4fc3f7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;font-size:14px}
+a{color:inherit}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1480px;margin:0 auto;padding:16px 20px 60px}
+
+/* 상단 */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-bottom:14px}
+.logo{font-size:22px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+.logo i{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4fc3f7,#a4d007);display:grid;place-items:center;font-style:normal;color:#0d1117;font-size:16px}
+.upd{color:var(--sub);font-size:13px;line-height:1.5}
+.upd b{color:var(--text);font-weight:600}
+.hbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#06202c;border-color:var(--accent);font-weight:700}
+.demo{background:#3a2a10;border:1px solid #6b4a14;color:#ffd699;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.6}
+
+/* 숫자 */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer}
+.stat:hover{border-color:var(--accent)}
+.stat small{color:var(--sub);font-size:12px}
+.stat div{font-size:22px;font-weight:800;margin-top:2px}
+
+/* 필터 */
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:0;padding:6px 12px;cursor:pointer;color:var(--sub)}
+.seg button.on{background:var(--panel2);color:var(--text);font-weight:700;box-shadow:inset 0 -2px 0 var(--accent)}
+.lbl{color:var(--sub);font-size:12px;margin-right:4px}
+.search{flex:1;min-width:180px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
+.search:focus{outline:none;border-color:var(--accent)}
+
+/* 본문 */
+.main{display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.calhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.calhead h2{margin:0;font-size:20px;min-width:150px;text-align:center}
+.calhead .nav{width:34px;height:34px;padding:0;justify-content:center}
+.calhead .hint{margin-left:auto;color:var(--sub);font-size:12px}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow div{padding:8px 10px;color:var(--sub);font-size:12px;font-weight:700}
+.dow div:first-child{color:#ff8a80}.dow div:last-child{color:#82b1ff}
+.day{min-height:132px;border-top:1px solid var(--line);border-right:1px solid var(--line);padding:6px;cursor:pointer;position:relative;overflow:hidden}
+.day:nth-child(7n){border-right:0}
+.day:hover{background:var(--panel2)}
+.day.out{opacity:.35}
+.day .num{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;margin-bottom:4px}
+.day .cnt{font-size:11px;color:var(--sub);font-weight:600}
+.day.today .num span:first-child{background:var(--today);color:#06202c;border-radius:6px;padding:0 6px}
+.chip{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.25;padding:2px 3px;border-radius:5px;margin-bottom:2px;white-space:nowrap;overflow:hidden}
+.chip:hover{background:var(--bg)}
+.chip img,.chip .ph{width:34px;height:13px;object-fit:cover;border-radius:2px;flex:none;background:#2a3446}
+.chip .nm{overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.more{font-size:11px;color:var(--accent);padding:1px 3px}
+.badge{flex:none;font-size:11px;font-weight:800;border-radius:4px;padding:0 4px;background:var(--saleBg);color:var(--sale)}
+.badge.new{background:#3d1630;color:var(--new)}
+.badge.chg{background:#3d2a10;color:var(--warn)}
+.badge.free{background:#12304a;color:var(--accent)}
+
+/* 사이드 */
+.side{display:flex;flex-direction:column;gap:14px}
+.side h3{margin:0;padding:12px 14px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.side h3 small{color:var(--sub);font-weight:400;font-size:12px;margin-left:auto}
+.list{max-height:560px;overflow:auto}
+.grp{padding:8px 14px 2px;font-size:12px;color:var(--accent);font-weight:700;position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;cursor:pointer}
+.grp span{color:var(--sub);font-weight:400}
+.empty{padding:16px 14px;color:var(--sub);font-size:13px}
+
+/* 게임 줄 */
+.g{display:flex;gap:10px;padding:8px 14px;border-bottom:1px solid #1e2634;align-items:center;text-decoration:none}
+.g:hover{background:var(--panel2)}
+.g img,.g .ph{width:92px;height:34px;object-fit:cover;border-radius:4px;flex:none;background:#2a3446}
+.g .info{flex:1;min-width:0}
+.g .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g .s{color:var(--sub);font-size:12px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.price{text-align:right;flex:none;font-size:13px}
+.price .o{color:var(--sub);text-decoration:line-through;font-size:11px;display:block}
+.price .f{font-weight:700}
+.price .end{display:block;font-size:11px;color:var(--warn);margin-top:2px}
+.ph{display:grid;place-items:center;font-size:10px;color:#9fb0c8;font-weight:700}
+.side .g{flex-wrap:wrap;row-gap:4px}
+.side .g img,.side .g .ph{width:76px;height:28px}
+.side .price{width:100%;padding-left:86px;text-align:left;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.side .price .o,.side .price .end{display:inline;margin:0}
+
+/* 날짜 패널 */
+.shade{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--panel);border-left:1px solid var(--line);z-index:21;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+.open .shade{display:block}.open .drawer{transform:none}
+.drawer header{margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}
+.drawer h2{margin:0;font-size:18px}
+.drawer .list{max-height:none;flex:1}
+.drawer .sorts{padding:8px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.results{margin-bottom:14px}
+.foot{color:var(--sub);font-size:12px;margin-top:24px;line-height:1.7}
+
+@media (max-width:1100px){.main{grid-template-columns:1fr}.list{max-height:420px}}
+@media (max-width:760px){
+  .wrap{padding:12px 10px 40px}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .stat:nth-child(n+4){display:none}
+  .day{min-height:64px;padding:4px}
+  .chip,.more{display:none}
+  .day .cnt{display:block;margin-top:6px;font-size:12px;color:var(--accent)}
+  .day .num{flex-direction:column;align-items:flex-start}
+  .hbtns{margin-left:0}
+  .calhead .hint{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div class="logo"><i>▦</i>스팀 게임 달력</div>
+    <div class="upd" id="upd">데이터 불러오는 중…</div>
+    <div class="hbtns">
+      <button class="btn" id="reload" title="최신 데이터를 다시 불러옵니다">↻ 새로 불러오기</button>
+      <a class="btn primary" id="runNow" target="_blank" rel="noopener">⚡ 지금 갱신하기</a>
+    </div>
+  </header>
+  <div class="demo" id="demo" hidden></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <div><span class="lbl">달력 기준</span>
+      <div class="seg" data-key="mode">
+        <button data-v="release" class="on">출시일</button><button data-v="saleEnd">할인 종료일</button>
+      </div></div>
+    <div><span class="lbl">보기</span>
+      <div class="seg" data-key="show">
+        <button data-v="all" class="on">전체</button><button data-v="upcoming">출시 예정</button><button data-v="released">출시됨</button><button data-v="sale">할인 중</button>
+      </div></div>
+    <div><span class="lbl">할인율</span>
+      <select id="minDc" class="btn" style="padding:6px 10px">
+        <option value="0">전체</option><option value="30">30% 이상</option><option value="50">50% 이상</option>
+        <option value="75">75% 이상</option><option value="90">90% 이상</option>
+      </select></div>
+    <input class="search" id="q" type="search" placeholder="게임 이름 검색">
+  </div>
+
+  <div class="card results" id="results" hidden></div>
+
+  <div class="main">
+    <div class="card">
+      <div class="calhead">
+        <button class="btn nav" id="prev" aria-label="이전 달">‹</button>
+        <h2 id="title"></h2>
+        <button class="btn nav" id="next" aria-label="다음 달">›</button>
+        <button class="btn" id="todayBtn">오늘</button>
+        <span class="hint">날짜를 누르면 그날 게임 전체 목록이 열려요</span>
+      </div>
+      <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <aside class="side">
+      <div class="card" id="freshCard">
+        <h3>🆕 최근 날짜 확정 <small>미확정 → 확정, 7일 이내</small></h3>
+        <div class="list" id="fresh" style="max-height:260px"></div>
+      </div>
+      <div class="card">
+        <h3>❔ 날짜 미확정 <small id="tbdCnt"></small></h3>
+        <div class="list" id="tbd"></div>
+      </div>
+      <div class="card">
+        <h3>⏰ 곧 끝나는 할인 <small>48시간 이내</small></h3>
+        <div class="list" id="ending" style="max-height:300px"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<div id="drawerRoot">
+  <div class="shade" id="shade"></div>
+  <div class="drawer" role="dialog" aria-modal="true">
+    <header><h2 id="dTitle"></h2><button class="btn" id="dClose" style="margin-left:auto">닫기 ✕</button></header>
+    <div class="sorts"><span class="lbl">정렬</span>
+      <div class="seg" data-key="dsort">
+        <button data-v="dc" class="on">할인율</button><button data-v="name">이름</button><button data-v="price">가격</button>
+      </div><span class="lbl" id="dCount" style="margin-left:auto"></span></div>
+    <div class="list" id="dList"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const TZ = "Asia/Seoul";
+  const IMG = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const won = n => "₩" + Number(n).toLocaleString("ko-KR");
+  const pad = n => String(n).padStart(2, "0");
+
+  // 한국 시간 기준 날짜
+  const kstParts = d => {
+    const p = new Intl.DateTimeFormat("en-CA", {timeZone: TZ, year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23"}).formatToParts(d);
+    const o = {}; p.forEach(x => o[x.type] = x.value); return o;
+  };
+  const kstDate = d => { const o = kstParts(d); return `${o.year}-${o.month}-${o.day}`; };
+  const fmtTime = d => { const o = kstParts(d); return `${+o.month}월 ${+o.day}일 ${o.hour}:${o.minute}`; };
+  const fmtDay = iso => { const [y,m,d] = iso.split("-"); return `${y}년 ${+m}월 ${+d}일`; };
+
+  const store = {
+    get(k, def) { try { const v = localStorage.getItem("sc_" + k); return v == null ? def : JSON.parse(v); } catch { return def; } },
+    set(k, v) { try { localStorage.setItem("sc_" + k, JSON.stringify(v)); } catch {} }
+  };
+
+  const S = {
+    games: [], meta: {}, demo: false,
+    mode: store.get("mode", "release"), show: store.get("show", "all"), minDc: store.get("minDc", 0),
+    dsort: store.get("dsort", "dc"), q: "", ym: null, dayOpen: null
+  };
+  let TODAY = kstDate(new Date());
+
+  // ───── 데이터 ─────
+  async function load(bust) {
+    $("upd").textContent = "데이터 불러오는 중…";
+    try {
+      const r = await fetch("data/games.json" + (bust ? "?t=" + Date.now() : ""), {cache: bust ? "no-store" : "default"});
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      if (!j.games || !j.games.length) throw new Error("empty");
+      S.games = j.games; S.meta = j.meta || {}; S.demo = false;
+    } catch (e) {
+      const j = makeDemo(); S.games = j.games; S.meta = j.meta; S.demo = true;
+    }
+    S.games.forEach(prep);
+    TODAY = kstDate(new Date());
+    if (!S.ym) S.ym = TODAY.slice(0, 7);
+    renderAll();
+  }
+
+  function prep(g) {
+    g.dc = g.dc || 0;
+    g.po = g.po ?? g.pf;
+    g.st = g.p !== "d" || !g.d ? "tbd" : (g.d > TODAY ? "upcoming" : "released");
+    g.seDay = g.se ? kstDate(new Date(g.se * 1000)) : null;
+    g.lname = (g.n || "").toLowerCase();
+  }
+
+  function filtered() {
+    const q = S.q.trim().toLowerCase();
+    return S.games.filter(g => {
+      if (S.show === "upcoming" && g.st !== "upcoming") return false;
+      if (S.show === "released" && g.st !== "released") return false;
+      if (S.show === "sale" && !g.dc) return false;
+      if (S.minDc > 0 && g.dc < S.minDc) return false;
+      if (q && !g.lname.includes(q)) return false;
+      return true;
+    });
+  }
+
+  // ───── 화면 조각 ─────
+  const imgSrc = g => !g.img ? "" : (g.img.startsWith("http") ? g.img : (S.meta.img_prefix || IMG) + g.i + "/" + g.img);
+  const thumb = (g, cls) => {
+    const s = imgSrc(g);
+    const init = esc((g.n || "?").slice(0, 2));
+    return s ? `<img loading="lazy" src="${esc(s)}" alt="" onerror="this.outerHTML='<span class=&quot;ph&quot;>${init}</span>'">`
+             : `<span class="ph">${init}</span>`;
+  };
+  const isRecent = (iso, days) => iso && (Date.now() - new Date(iso).getTime()) < days * 864e5;
+
+  function priceHtml(g) {
+    let h = "";
+    if (g.fr) h = `<span class="f" style="color:var(--accent)">무료</span>`;
+    else if (g.pf != null) {
+      if (g.dc) h = `<span class="o">${won(g.po)}</span><span class="f"><span class="badge">-${g.dc}%</span> ${won(g.pf)}</span>`;
+      else h = `<span class="f">${won(g.pf)}</span>`;
+    } else h = `<span class="o" style="text-decoration:none">가격 미정</span>`;
+    if (g.dc && g.se) {
+      const left = g.se * 1000 - Date.now();
+      const dd = Math.ceil(left / 864e5);
+      const t = left < 864e5 ? `${Math.max(1, Math.round(left / 36e5))}시간 남음` : `D-${dd}`;
+      h += `<span class="end">${fmtTime(new Date(g.se * 1000))}까지 · ${t}</span>`;
+    } else if (g.dc) h += `<span class="end" style="color:var(--sub)">종료일 미공개</span>`;
+    return `<div class="price">${h}</div>`;
+  }
+
+  function relText(g) {
+    if (g.st === "tbd") return `<span>📅 ${esc(g.r || "출시일 미정")}</span>`;
+    const lab = g.st === "upcoming" ? "출시 예정" : "출시";
+    return `<span>📅 ${fmtDay(g.d)} ${lab}</span>`;
+  }
+
+  function gameRow(g, extra = "") {
+    const tags = [];
+    if (isRecent(g.dt, 7)) tags.push(`<span class="badge new">날짜 확정</span>`);
+    if (g.ch && isRecent(g.ch.a, 14)) tags.push(`<span class="badge chg">일정 변경 (${esc(g.ch.f || "")} →)</span>`);
+    return `<a class="g" href="https://store.steampowered.com/app/${g.i}/" target="_blank" rel="noopener">
+      ${thumb(g)}<div class="info"><div class="t">${esc(g.n)}</div>
+      <div class="s">${relText(g)}${tags.join("")}${extra}</div></div>${priceHtml(g)}</a>`;
+  }
+
+  // ───── 달력 ─────
+  function dayKey(g) { return S.mode === "saleEnd" ? (g.dc ? g.seDay : null) : (g.st !== "tbd" ? g.d : null); }
+
+  function sortGames(list, how) {
+    const by = {
+      dc: (a, b) => (b.dc - a.dc) || a.n.localeCompare(b.n, "ko"),
+      name: (a, b) => a.n.localeCompare(b.n, "ko"),
+      price: (a, b) => ((a.fr ? 0 : a.pf ?? 1e12) - (b.fr ? 0 : b.pf ?? 1e12)) || a.n.localeCompare(b.n, "ko")
+    }[how];
+    return list.sort(by);
+  }
+
+  function renderCalendar(list) {
+    const [y, m] = S.ym.split("-").map(Number);
+    $("title").textContent = `${y}년 ${m}월`;
+    const byDay = new Map();
+    for (const g of list) {
+      const k = dayKey(g); if (!k) continue;
+      if (!byDay.has(k)) byDay.set(k, []);
+      byDay.get(k).push(g);
+    }
+    S.byDay = byDay;
+    const first = new Date(Date.UTC(y, m - 1, 1));
+    const start = new Date(first); start.setUTCDate(1 - first.getUTCDay());
+    const weeks = Math.ceil((first.getUTCDay() + new Date(Date.UTC(y, m, 0)).getUTCDate()) / 7);
+    let h = "";
+    for (let i = 0; i < weeks * 7; i++) {
+      const d = new Date(start); d.setUTCDate(start.getUTCDate() + i);
+      const iso = d.toISOString().slice(0, 10);
+      const gs = sortGames((byDay.get(iso) || []).slice(), "dc");
+      const out = d.getUTCMonth() !== m - 1;
+      const chips = gs.slice(0, 4).map(g => {
+        let b = "";
+        if (S.mode === "saleEnd" || g.dc) b = g.dc ? `<span class="badge">-${g.dc}%</span>` : "";
+        else if (isRecent(g.dt, 7)) b = `<span class="badge new">확정</span>`;
+        else if (g.fr) b = `<span class="badge free">무료</span>`;
+        return `<div class="chip" title="${esc(g.n)}">${thumb(g)}<span class="nm">${esc(g.n)}</span>${b}</div>`;
+      }).join("");
+      const more = gs.length > 4 ? `<div class="more">+${gs.length - 4}개 더 보기</div>` : "";
+      h += `<div class="day${out ? " out" : ""}${iso === TODAY ? " today" : ""}" data-day="${iso}">
+        <div class="num"><span>${d.getUTCDate()}</span>${gs.length ? `<span class="cnt">${gs.length}개</span>` : ""}</div>${chips}${more}</div>`;
+    }
+    $("grid").innerHTML = h;
+  }
+
+  function openDay(iso) {
+    S.dayOpen = iso;
+    const gs = sortGames((S.byDay.get(iso) || []).slice(), S.dsort);
+    $("dTitle").textContent = `${fmtDay(iso)} · ${S.mode === "saleEnd" ? "할인 종료" : "출시"}`;
+    $("dCount").textContent = `${gs.length}개`;
+    $("dList").innerHTML = gs.length ? gs.map(g => gameRow(g)).join("") : `<div class="empty">이 날짜에 해당하는 게임이 없어요.</div>`;
+    $("drawerRoot").classList.add("open");
+  }
+  const closeDay = () => { $("drawerRoot").classList.remove("open"); S.dayOpen = null; };
+
+  // ───── 사이드 ─────
+  function tbdGroup(g) {
+    const tk = g.tk || "";
+    if (g.p === "m") { const [y, m] = tk.split("-"); return {k: +y * 100 + +m, t: `${y}년 ${+m}월 (일 미정)`}; }
+    if (g.p === "q") { const [y, q] = tk.split("-Q"); return {k: +y * 100 + q * 3 + .5, t: `${y}년 ${q}분기`}; }
+    if (g.p === "y") return {k: +tk * 100 + 13, t: `${tk}년 (월 미정)`};
+    return {k: 1e9, t: "출시일 미정 (예정·추후 공개)"};
+  }
+
+  function renderSide(list) {
+    // 날짜 미확정
+    const tbd = list.filter(g => g.st === "tbd");
+    $("tbdCnt").textContent = `${tbd.length.toLocaleString()}개 · 갱신 때마다 다시 확인`;
+    const groups = new Map();
+    tbd.forEach(g => { const x = tbdGroup(g); if (!groups.has(x.t)) groups.set(x.t, {k: x.k, a: []}); groups.get(x.t).a.push(g); });
+    const open = S.tbdOpen || (S.tbdOpen = new Set());
+    const gs = [...groups.entries()].sort((a, b) => a[1].k - b[1].k);
+    $("tbd").innerHTML = gs.length ? gs.map(([t, o], idx) => {
+      const isOpen = open.has(t) || (open.size === 0 && idx === 0);
+      const rows = isOpen ? sortGames(o.a, "name").slice(0, 300).map(g => gameRow(g, g.u ? `<span>확인 ${fmtTime(new Date(g.u))}</span>` : "")).join("") +
+        (o.a.length > 300 ? `<div class="empty">… 외 ${o.a.length - 300}개 (검색으로 찾아보세요)</div>` : "") : "";
+      return `<div class="grp" data-grp="${esc(t)}">${isOpen ? "▾" : "▸"} ${esc(t)} <span>${o.a.length}개</span></div>${rows}`;
+    }).join("") : `<div class="empty">날짜 미확정 게임이 없어요.</div>`;
+
+    // 최근 확정
+    const fresh = list.filter(g => isRecent(g.dt, 7)).sort((a, b) => b.dt.localeCompare(a.dt));
+    $("fresh").innerHTML = fresh.length ? fresh.slice(0, 100).map(g => gameRow(g)).join("")
+      : `<div class="empty">최근 7일 동안 새로 날짜가 확정된 게임이 없어요. 갱신할 때마다 미확정 목록을 다시 확인해 여기 보여드려요.</div>`;
+
+    // 곧 끝나는 할인
+    const now = Date.now() / 1000;
+    const ending = list.filter(g => g.dc && g.se && g.se - now < 172800 && g.se > now).sort((a, b) => a.se - b.se || b.dc - a.dc);
+    $("ending").innerHTML = ending.length ? ending.slice(0, 100).map(g => gameRow(g)).join("") : `<div class="empty">48시간 안에 끝나는 할인이 없어요.</div>`;
+  }
+
+  function renderStats() {
+    const c = {all: S.games.length, up: 0, sale: 0, tbd: 0, fresh: 0};
+    S.games.forEach(g => { if (g.st === "upcoming") c.up++; if (g.dc) c.sale++; if (g.st === "tbd") c.tbd++; if (isRecent(g.dt, 7)) c.fresh++; });
+    const it = [["전체 게임", c.all, "all"], ["출시 예정", c.up, "upcoming"], ["할인 중", c.sale, "sale"], ["날짜 미확정", c.tbd, "tbd"], ["최근 날짜 확정", c.fresh, "fresh"]];
+    $("stats").innerHTML = it.map(([l, n, k]) => `<div class="stat" data-stat="${k}"><small>${l}</small><div>${n.toLocaleString()}</div></div>`).join("");
+  }
+
+  function renderResults(list) {
+    const q = S.q.trim();
+    if (!q) { $("results").hidden = true; return; }
+    const r = sortGames(list.slice(), "name").slice(0, 60);
+    $("results").hidden = false;
+    $("results").innerHTML = `<div class="calhead"><b>“${esc(q)}” 검색 결과 ${list.length}개</b><span class="hint">눌러서 스팀 상점 열기</span></div>` +
+      (r.length ? r.map(g => gameRow(g)).join("") : `<div class="empty">찾는 게임이 없어요.</div>`);
+  }
+
+  function nextUpdate() {
+    const o = kstParts(new Date()); const h = +o.hour;
+    return h < 3 ? "오늘 오전 3:00" : h < 15 ? "오늘 오후 3:00" : "내일 오전 3:00";
+  }
+
+  function repoUrl() {
+    let repo = S.meta.repo;
+    if (!repo && location.hostname.endsWith(".github.io")) {
+      const seg = location.pathname.split("/").filter(Boolean)[0];
+      repo = location.hostname.split(".")[0] + "/" + (seg || location.hostname);
+    }
+    return repo ? `https://github.com/${repo}/actions/workflows/update.yml` : null;
+  }
+
+  function renderHeader() {
+    const u = S.meta.updated_at ? fmtTime(new Date(S.meta.updated_at)) : "-";
+    $("upd").innerHTML = `마지막 갱신 <b>${u}</b> · 다음 자동 갱신 <b>${nextUpdate()}</b><br>매일 오전 3시 · 오후 3시 (한국시간) 자동 갱신`;
+    const url = repoUrl();
+    const a = $("runNow");
+    if (url) { a.href = url; a.onclick = null; }
+    else { a.removeAttribute("href"); a.onclick = () => { const n = $("demo"); n.hidden = false; n.innerHTML = "⚡ <b>지금 갱신하기</b>는 GitHub에 올린 뒤에 쓸 수 있어요. GitHub 저장소 → <b>Actions</b> → <b>스팀 데이터 갱신</b> → <b>Run workflow</b> 를 누르면 바로 갱신돼요."; n.scrollIntoView({behavior: "smooth"}); }; }
+    const dm = $("demo");
+    dm.hidden = !S.demo;
+    if (S.demo) dm.innerHTML = "⚠ 지금 보이는 건 <b>화면 확인용 예시 데이터</b>예요 (게임 이름·가격 모두 가짜). 안내서대로 GitHub에 올리고 첫 갱신이 끝나면 실제 Steam 데이터로 바뀝니다.";
+    const st = S.meta.stat || {};
+    $("foot").innerHTML = `데이터: Steam 상점 (한국 가격 기준). 출시 예정 · 최근 출시 · 할인 중 게임을 모아 갱신할 때마다 누적합니다.` +
+      (st.on_sale ? ` 할인 ${st.on_sale.toLocaleString()}개 중 종료일 확인 ${(st.sale_with_end || 0).toLocaleString()}개.` : "") +
+      `<br>할인 시작일은 Steam이 공개하지 않아 종료일만 표시합니다. 출시일은 개발사가 바꿀 수 있어요.`;
+  }
+
+  function renderAll() {
+    const list = filtered();
+    renderHeader(); renderStats(); renderResults(list); renderCalendar(list); renderSide(list);
+    document.querySelectorAll(".seg").forEach(seg => {
+      const k = seg.dataset.key;
+      seg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === S[k]));
+    });
+    $("minDc").value = String(S.minDc);
+    if (S.dayOpen) openDay(S.dayOpen);
+  }
+
+  // ───── 이벤트 ─────
+  document.querySelectorAll(".seg").forEach(seg => seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    S[seg.dataset.key] = b.dataset.v; store.set(seg.dataset.key, b.dataset.v); renderAll();
+  }));
+  $("minDc").onchange = e => { S.minDc = +e.target.value; store.set("minDc", S.minDc); renderAll(); };
+  let qt; $("q").oninput = e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value; renderAll(); }, 200); };
+  const shift = n => { let [y, m] = S.ym.split("-").map(Number); m += n; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } S.ym = `${y}-${pad(m)}`; renderAll(); };
+  $("prev").onclick = () => shift(-1);
+  $("next").onclick = () => shift(1);
+  $("todayBtn").onclick = () => { S.ym = TODAY.slice(0, 7); renderAll(); };
+  $("grid").onclick = e => { const d = e.target.closest(".day"); if (d) openDay(d.dataset.day); };
+  $("shade").onclick = closeDay; $("dClose").onclick = closeDay;
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDay(); });
+  $("tbd").onclick = e => {
+    const g = e.target.closest(".grp"); if (!g) return;
+    const t = g.dataset.grp, o = S.tbdOpen;
+    if (o.size === 0) { const first = $("tbd").querySelector(".grp"); if (first) o.add(first.dataset.grp); }
+    o.has(t) ? o.delete(t) : o.add(t); renderSide(filtered());
+  };
+  $("stats").onclick = e => {
+    const s = e.target.closest(".stat"); if (!s) return;
+    const k = s.dataset.stat;
+    if (k === "tbd" || k === "fresh") { (k === "tbd" ? $("tbd") : $("fresh")).scrollIntoView({behavior: "smooth", block: "center"}); return; }
+    S.show = k; store.set("show", k); renderAll();
+  };
+  $("reload").onclick = () => load(true);
+  setInterval(() => { renderHeader(); }, 60000);
+
+  // ───── 예시 데이터 (실제 데이터가 없을 때만) ─────
+  function makeDemo() {
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const now = new Date(); const games = [];
+    const prices = [5500, 11000, 16500, 22000, 33000, 43000, 64800];
+    for (let i = 1; i <= 420; i++) {
+      const off = Math.floor(rnd() * 120) - 55;
+      const d = new Date(now.getTime() + off * 864e5);
+      const iso = kstDate(d);
+      const g = {i: 900000 + i, n: `예시 게임 ${String(i).padStart(3, "0")}`, p: "d", d: iso, r: fmtDay(iso), u: now.toISOString()};
+      const pr = prices[Math.floor(rnd() * prices.length)];
+      if (rnd() < .08) g.fr = true; else if (off > 0 && rnd() < .3) {} else g.pf = pr;
+      if (g.pf && off < 0 && rnd() < .35) { g.dc = [20, 33, 50, 75, 90][Math.floor(rnd() * 5)]; g.po = pr; g.pf = Math.round(pr * (100 - g.dc) / 100 / 10) * 10; g.se = Math.floor(now.getTime() / 1000 + (0.3 + rnd() * 14) * 86400); }
+      if (off > 0 && rnd() < .06) g.dt = new Date(now.getTime() - rnd() * 5 * 864e5).toISOString();
+      if (off > 0 && rnd() < .03) g.ch = {f: kstDate(new Date(d.getTime() - 20 * 864e5)), a: now.toISOString()};
+      games.push(g);
+    }
+    const y = +TODAY.slice(0, 4);
+    [["m", `${y + 1}-02`, `${y + 1}년 2월`], ["q", `${y + 1}-Q1`, `${y + 1}년 1분기`], ["q", `${y + 1}-Q2`, `${y + 1}년 2분기`], ["y", `${y + 1}`, `${y + 1}년`], ["x", "", "출시 예정"], ["x", "", "추후 공개"]]
+      .forEach(([p, tk, r], k) => { for (let j = 0; j < 6 + k * 2; j++) games.push({i: 950000 + k * 100 + j, n: `예시 미확정 게임 ${k + 1}-${j + 1}`, p, tk, r, u: now.toISOString()}); });
+    return {meta: {updated_at: now.toISOString(), stat: {}}, games};
+  }
+
+  load(false);
+})();
+</script>
+</body>
+</html>
