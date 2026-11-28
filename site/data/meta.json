@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-11-27T16:04+09:00",
+ "updated_at": "2026-11-28T15:58+09:00",
  "repo": "jieung000229-droid/steam-new-game",
  "img_prefix": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/",
  "complete": {
@@ -8,10 +8,10 @@
   "specials": false
  },
  "stat": {
-  "total": 27916,
-  "dated": 16522,
-  "tbd": 11394,
-  "on_sale": 10784,
-  "sale_with_end": 10781
+  "total": 29155,
+  "dated": 17025,
+  "tbd": 12130,
+  "on_sale": 11050,
+  "sale_with_end": 11047
  }
 }
